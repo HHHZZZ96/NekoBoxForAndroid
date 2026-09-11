@@ -2679,8 +2679,3 @@ class ConfigurationFragment @JvmOverloads constructor(
     }
 
 }
-lapsed()
-        searchView.clearFocus()
-    }
-
-}
