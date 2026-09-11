@@ -630,6 +630,46 @@
         <item name="cardElevatedSurfaceColor">@color/card_elevated_verdant_mint</item>
     </style>
 
+    <style name="Theme.SagerNet.White" parent="Theme.SagerNet">
+        <item name="colorPrimary">@color/pure_white</item>
+        <item name="colorPrimaryDark">@color/pure_white</item>
+        <item name="colorAccent">@color/pure_white_accent</item>
+        <item name="colorSurface">@color/pure_white</item>
+        <item name="android:colorBackground">@color/pure_white</item>
+        <item name="android:windowBackground">@color/pure_white</item>
+        <item name="cardElevatedSurfaceColor">@color/pure_white</item>
+        <item name="colorMaterial100">@color/pure_white</item>
+        <item name="colorMaterial300">@color/material_grey_200</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorOnPrimarySurface">@color/black</item>
+        <item name="selectedColorPrimary">@color/material_light_black</item>
+        <item name="fabColorBackground">@color/pure_white</item>
+        <item name="actionBarTheme">@style/ThemeOverlay.AppCompat.Light.ActionBar</item>
+        <item name="tabTextColor">#99000000</item>
+        <item name="tabSelectedTextColor">@color/black</item>
+        <item name="tabIndicatorColor">@color/black</item>
+        <item name="tabRippleColor">#1F000000</item>
+        <item name="whiteOrTextPrimary">?android:textColorPrimary</item>
+        <item name="accentOrTextSecondary">?android:textColorSecondary</item>
+        <item name="accentOrTextPrimary">?android:textColorPrimary</item>
+        <item name="primaryOrTextSecondary">?android:textColorSecondary</item>
+        <item name="primaryOrTextPrimary">?android:textColorPrimary</item>
+    </style>
+
+    <style name="Theme.SagerNet.Dialog.White" parent="Theme.SagerNet.Dialog">
+        <item name="colorPrimary">@color/pure_white</item>
+        <item name="colorPrimaryDark">@color/pure_white</item>
+        <item name="colorAccent">@color/pure_white_accent</item>
+        <item name="colorSurface">@color/pure_white</item>
+        <item name="cardElevatedSurfaceColor">@color/pure_white</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorOnPrimarySurface">@color/black</item>
+        <item name="accentOrTextSecondary">?android:textColorSecondary</item>
+        <item name="accentOrTextPrimary">?android:textColorPrimary</item>
+        <item name="primaryOrTextSecondary">?android:textColorSecondary</item>
+        <item name="primaryOrTextPrimary">?android:textColorPrimary</item>
+    </style>
+
     <style name="Theme.Start" parent="Theme.MaterialComponents.DayNight">
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="colorPrimary">@android:color/transparent</item>

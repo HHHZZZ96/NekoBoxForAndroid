@@ -25,6 +25,7 @@ public class SubscriptionBean extends Serializable {
     public Integer filterMode;
     public String filterRegex;
     public String serverDnsResolver;
+    public Boolean showInfoCard;
 
     // SIP008
 
@@ -47,7 +48,7 @@ public class SubscriptionBean extends Serializable {
 
     @Override
     public void serializeToBuffer(ByteBufferOutput output) {
-        output.writeInt(3);
+        output.writeInt(4);
 
         output.writeInt(type);
 
@@ -69,6 +70,9 @@ public class SubscriptionBean extends Serializable {
 
         // v3
         output.writeString(serverDnsResolver);
+
+        // v4
+        output.writeBoolean(showInfoCard);
     }
 
     public void serializeForShare(ByteBufferOutput output) {
@@ -108,6 +112,10 @@ public class SubscriptionBean extends Serializable {
         if (version >= 3) {
             serverDnsResolver = input.readString();
         }
+
+        if (version >= 4) {
+            showInfoCard = input.readBoolean();
+        }
     }
 
     public void deserializeFromShare(ByteBufferInput input) {
@@ -136,6 +144,7 @@ public class SubscriptionBean extends Serializable {
         if (filterMode == null) filterMode = 0;
         if (filterRegex == null) filterRegex = "";
         if (serverDnsResolver == null) serverDnsResolver = "";
+        if (showInfoCard == null) showInfoCard = true;
 
         if (bytesUsed == null) bytesUsed = 0L;
         if (bytesRemaining == null) bytesRemaining = 0L;

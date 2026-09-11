@@ -55,9 +55,9 @@
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/edit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="@string/edit"
                     android:focusable="true"
@@ -66,25 +66,16 @@
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/double_column_menu"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/edit"
-                    android:focusable="true"
-                    android:padding="12dp"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
                     android:visibility="gone"
                     app:srcCompat="@drawable/ic_baseline_more_vert_24" />
 
                 <LinearLayout
                     android:id="@+id/share"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/share"
-                    android:focusable="true"
-                    android:nextFocusLeft="@+id/container">
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone">
 
                     <LinearLayout
                         android:id="@+id/share_layer"
@@ -103,13 +94,8 @@
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/remove"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="@string/delete"
-                    android:focusable="true"
-                    android:padding="12dp"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
                     android:visibility="gone"
                     app:srcCompat="@drawable/ic_action_delete" />
 

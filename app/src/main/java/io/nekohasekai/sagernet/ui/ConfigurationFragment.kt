@@ -35,11 +35,13 @@ import kotlinx.coroutines.delay
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceDataStore
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.tabs.TabLayout
@@ -58,6 +60,7 @@ import io.nekohasekai.sagernet.database.ProfileManager
 import io.nekohasekai.sagernet.database.ProxyEntity
 import io.nekohasekai.sagernet.database.ProxyGroup
 import io.nekohasekai.sagernet.database.SagerDatabase
+import io.nekohasekai.sagernet.database.parseInfo
 import io.nekohasekai.sagernet.database.preference.OnPreferenceDataStoreChangeListener
 import io.nekohasekai.sagernet.databinding.LayoutProfileListBinding
 import io.nekohasekai.sagernet.databinding.LayoutProgressListBinding
@@ -131,6 +134,9 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URLDecoder
 import java.net.UnknownHostException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
@@ -364,7 +370,13 @@ class ConfigurationFragment @JvmOverloads constructor(
             if (adapter.groupList.size > position) {
                 tab.text = adapter.groupList[position].displayName()
             }
-            tab.view.setOnLongClickListener { // clear toast
+            tab.view.setOnLongClickListener {
+                val group = adapter.groupList.getOrNull(position)
+                if (group != null && !group.ungrouped && group.id !in GroupUpdater.updating) {
+                    startActivity(Intent(requireContext(), GroupSettingsActivity::class.java).apply {
+                        putExtra(GroupSettingsActivity.EXTRA_GROUP_ID, group.id)
+                    })
+                }
                 true
             }
         }.attach()
@@ -383,11 +395,15 @@ class ConfigurationFragment @JvmOverloads constructor(
                         val last = layoutManager.findLastVisibleItemPosition()
 
                         if (selectedProfileIndex !in first..last) {
-                            fragment.configurationListView.scrollTo(selectedProfileIndex, true)
+                            fragment.configurationListView.scrollTo(
+                                fragment.listPosition(selectedProfileIndex), true
+                            )
                             return@setOnClickListener
                         }
                     } else {
-                        fragment.configurationListView.scrollTo(selectedProfileIndex, true)
+                        fragment.configurationListView.scrollTo(
+                            fragment.listPosition(selectedProfileIndex), true
+                        )
                         return@setOnClickListener
                     }
 
@@ -563,6 +579,10 @@ class ConfigurationFragment @JvmOverloads constructor(
 
     override fun onMenuItemClick(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.action_search -> {
+                showSearchDialog()
+            }
+
             R.id.action_scan_qr_code -> {
                 startActivity(Intent(context, ScannerActivity::class.java))
             }
@@ -1122,7 +1142,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                         Logs.w(e)
                     }
                 }
-                GroupManager.postReload(DataStore.currentGroupId())
+                GroupManager.postReload(group.id)
                 DataStore.runningTest = false
             }
         }
@@ -1137,12 +1157,11 @@ class ConfigurationFragment @JvmOverloads constructor(
     }
 
     @OptIn(DelicateCoroutinesApi::class)
-    fun urlTest() {
+    fun urlTest(group: ProxyGroup = DataStore.currentGroup()) {
         if (DataStore.runningTest) return else DataStore.runningTest = true
         val test = TestDialog()
         val dialog = test.builder.show()
         val testJobs = mutableListOf<Job>()
-        val group = DataStore.currentGroup()
 
         val mainJob = runOnDefaultDispatcher {
             val profilesList = SagerDatabase.proxyDao.getByGroup(group.id)
@@ -1191,7 +1210,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                         Logs.w(e)
                     }
                 }
-                GroupManager.postReload(DataStore.currentGroupId())
+                GroupManager.postReload(group.id)
                 DataStore.runningTest = false
             }
         }
@@ -1412,6 +1431,8 @@ class ConfigurationFragment @JvmOverloads constructor(
             }
             
             itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, 0) {
+                override fun isLongPressDragEnabled() = false
+
                 override fun getMovementFlags(
                     recyclerView: RecyclerView,
                     viewHolder: RecyclerView.ViewHolder
@@ -1451,6 +1472,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                     recyclerView: RecyclerView,
                     viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder,
                 ): Boolean {
+                    if (viewHolder !is ConfigurationHolder || target !is ConfigurationHolder) return false
                     val fromPosition = viewHolder.bindingAdapterPosition
                     val toPosition = target.bindingAdapterPosition
                     
@@ -1474,6 +1496,12 @@ class ConfigurationFragment @JvmOverloads constructor(
             itemTouchHelper.attachToRecyclerView(configurationListView)
         }
         lateinit var configurationListView: RecyclerView
+        private lateinit var swipeRefresh: SwipeRefreshLayout
+        private var infoAdapter: SubscriptionInfoAdapter? = null
+        private var concatAdapter: ConcatAdapter? = null
+
+        private fun headerCount() = infoAdapter?.itemCount ?: 0
+        private fun listPosition(profilePosition: Int) = headerCount() + profilePosition
 
         val select by lazy {
             try {
@@ -1602,7 +1630,12 @@ class ConfigurationFragment @JvmOverloads constructor(
 
         private fun setupLayoutManager() {
             layoutManager = if (DataStore.groupLayoutMode == 1) {
-                FixedGridLayoutManager(configurationListView, 2)
+                FixedGridLayoutManager(configurationListView, 2).apply {
+                    spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
+                        override fun getSpanSize(position: Int): Int =
+                            if (headerCount() > 0 && position == 0) spanCount else 1
+                    }
+                }
             } else {
                 FixedLinearLayoutManager(configurationListView)
             }
@@ -1621,12 +1654,24 @@ class ConfigurationFragment @JvmOverloads constructor(
             if (!::proxyGroup.isInitialized) return
 
             configurationListView = view.findViewById(R.id.configuration_list)
+            swipeRefresh = view.findViewById(R.id.profile_swipe_refresh)
             setupLayoutManager()
             configurationListView.layoutManager = layoutManager
             adapter = ConfigurationAdapter()
             ProfileManager.addListener(adapter!!)
             GroupManager.addListener(adapter!!)
-            configurationListView.adapter = adapter
+            infoAdapter = SubscriptionInfoAdapter()
+            concatAdapter = ConcatAdapter(
+                ConcatAdapter.Config.Builder().setIsolateViewTypes(false).build(),
+                infoAdapter!!,
+                adapter!!,
+            )
+            configurationListView.adapter = concatAdapter
+            swipeRefresh.setOnChildScrollUpCallback { _, _ -> configurationListView.canScrollVertically(-1) }
+            swipeRefresh.setOnRefreshListener {
+                swipeRefresh.isRefreshing = false
+                (parentFragment as? ConfigurationFragment)?.urlTest(proxyGroup)
+            }
             configurationListView.setItemViewCacheSize(20)
             configurationListView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
@@ -1682,6 +1727,65 @@ class ConfigurationFragment @JvmOverloads constructor(
 
             if (!::undoManager.isInitialized) return
             undoManager.flush()
+        }
+
+
+        inner class SubscriptionInfoAdapter : RecyclerView.Adapter<SubscriptionInfoHolder>() {
+            init { setHasStableIds(true) }
+
+            override fun getItemId(position: Int) = Long.MIN_VALUE + proxyGroup.id
+            override fun getItemCount(): Int = if (
+                !select && proxyGroup.type == GroupType.SUBSCRIPTION &&
+                proxyGroup.subscription?.showInfoCard == true
+            ) 1 else 0
+
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SubscriptionInfoHolder =
+                SubscriptionInfoHolder(
+                    LayoutInflater.from(parent.context)
+                        .inflate(R.layout.layout_subscription_info_card, parent, false)
+                )
+
+            override fun onBindViewHolder(holder: SubscriptionInfoHolder, position: Int) {
+                holder.bind()
+            }
+        }
+
+        inner class SubscriptionInfoHolder(view: View) : RecyclerView.ViewHolder(view) {
+            private val traffic: TextView = view.findViewById(R.id.subscription_traffic)
+            private val expiry: TextView = view.findViewById(R.id.subscription_expiry)
+            private val status: TextView = view.findViewById(R.id.subscription_status)
+            private val refresh: View = view.findViewById(R.id.subscription_refresh)
+
+            fun bind() {
+                val subscription = proxyGroup.subscription ?: return
+                val info = subscription.parseInfo()
+                val unknown = getString(R.string.subscription_info_unknown)
+                fun bytes(value: Long?) = value?.let {
+                    Formatter.formatFileSize(requireContext(), it)
+                } ?: unknown
+                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                traffic.text = getString(
+                    R.string.subscription_info_traffic,
+                    bytes(info.usedBytes),
+                    bytes(info.remainingBytes),
+                )
+                expiry.text = getString(
+                    R.string.subscription_info_expiry,
+                    info.expireAtSeconds?.let { date.format(Date(it * 1000L)) } ?: unknown,
+                )
+                val updated = subscription.lastUpdated.takeIf { it > 0 }?.let {
+                    date.format(Date(it * 1000L))
+                } ?: getString(R.string.subscription_info_never)
+                status.text = getString(
+                    R.string.subscription_info_status,
+                    adapter?.configurationIdList?.size ?: 0,
+                    updated,
+                )
+                val updating = proxyGroup.id in GroupUpdater.updating
+                refresh.isEnabled = !updating
+                refresh.alpha = if (updating) 0.38f else 1f
+                refresh.setOnClickListener { GroupUpdater.startUpdate(proxyGroup, true) }
+            }
         }
 
         inner class ConfigurationAdapter : RecyclerView.Adapter<ConfigurationHolder>(),
@@ -2047,7 +2151,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                     if (noTraffic && !contentChanged) return@post
 
                     val newHasMiddleRow = hasMiddleRow(updatedProfile)
-                    val holder = layoutManager.findViewByPosition(index)
+                    val holder = layoutManager.findViewByPosition(listPosition(index))
                         ?.let { configurationListView.getChildViewHolder(it) } as? ConfigurationHolder
                     val previous = holder?.lastSelfHasMiddleRow
                     notifyItemChanged(index)
@@ -2097,12 +2201,14 @@ class ConfigurationFragment @JvmOverloads constructor(
             override suspend fun groupUpdated(group: ProxyGroup) {
                 if (group.id != proxyGroup.id) return
                 proxyGroup = group
+                configurationListView.post { infoAdapter?.notifyDataSetChanged() }
                 reloadProfiles()
             }
 
             override suspend fun groupUpdated(groupId: Long) {
                 if (groupId != proxyGroup.id) return
                 proxyGroup = SagerDatabase.groupDao.getById(groupId)!!
+                configurationListView.post { infoAdapter?.notifyDataSetChanged() }
                 reloadProfiles()
             }
 
@@ -2136,9 +2242,10 @@ class ConfigurationFragment @JvmOverloads constructor(
                     configurationIdList.clear()
                     configurationIdList.addAll(newProfileIds)
                     notifyDataSetChanged()
+                    infoAdapter?.notifyDataSetChanged()
 
                     if (selectedProfileIndex != -1) {
-                        configurationListView.scrollTo(selectedProfileIndex, true)
+                        configurationListView.scrollTo(listPosition(selectedProfileIndex), true)
                     } else if (newProfiles.isNotEmpty()) {
                         configurationListView.scrollTo(0, true)
                     }
@@ -2208,6 +2315,10 @@ class ConfigurationFragment @JvmOverloads constructor(
                     } else {
                         selectProfile(proxyEntity)
                     }
+                }
+                view.setOnLongClickListener {
+                    if (!select) showDoubleColumnMenu(it, entity)
+                    !select
                 }
                 profileStatus.setOnClickListener {
                     val proxyEntity = entity
@@ -2420,26 +2531,10 @@ class ConfigurationFragment @JvmOverloads constructor(
                     profileStatus.text = if (msg != err) msg else getString(R.string.unavailable)
                 }
 
-                val selectOrChain = select || proxyEntity.type == ProxyEntity.TYPE_CHAIN
-                val isDoubleColumn = layoutManager is FixedGridLayoutManager
-                
-                if (isDoubleColumn) {
-                    editButton.isGone = true
-                    shareLayout.isGone = true
-                    removeButton.isGone = true
-                    doubleColumnMenuButton.isVisible = true
-                } else {
-                    shareLayout.isGone = selectOrChain
-                    editButton.isGone = select
-                    removeButton.isGone = select
-                    doubleColumnMenuButton.isGone = true
-                }
-
-                proxyEntity.nekoBean?.apply {
-                    if (!isDoubleColumn) {
-                        shareLayout.isGone = true
-                    }
-                }
+                editButton.isGone = true
+                shareLayout.isGone = true
+                removeButton.isGone = true
+                doubleColumnMenuButton.isGone = true
 
                 val selected = pf.isSelectedProfile(proxyEntity.id)
                 val started =
@@ -2562,8 +2657,29 @@ class ConfigurationFragment @JvmOverloads constructor(
             }
         }
 
+    private fun showSearchDialog() {
+        val input = androidx.appcompat.widget.AppCompatEditText(requireContext()).apply {
+            hint = getString(androidx.appcompat.R.string.abc_search_hint)
+            setSingleLine()
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(android.R.string.search_go)
+            .setView(input)
+            .setPositiveButton(android.R.string.search_go) { _, _ ->
+                onQueryTextChange(input.text?.toString().orEmpty())
+            }
+            .setNeutralButton(android.R.string.cancel, null)
+            .setNegativeButton(R.string.clear_profiles) { _, _ -> onQueryTextChange("") }
+            .show()
+    }
+
     private fun cancelSearch(searchView: SearchView) {
         searchView.onActionViewCollapsed()
+        searchView.clearFocus()
+    }
+
+}
+lapsed()
         searchView.clearFocus()
     }
 

@@ -45,6 +45,13 @@
         app:key="groupSubscription"
         app:title="@string/subscription_settings">
 
+        <SwitchPreference
+            app:defaultValue="true"
+            app:icon="@drawable/ic_baseline_info_24"
+            app:key="subscriptionShowInfoCard"
+            app:summary="@string/subscription_show_info_card_summary"
+            app:title="@string/subscription_show_info_card" />
+
         <io.nekohasekai.sagernet.widget.LinkOrContentPreference
             app:icon="@drawable/ic_baseline_link_24"
             app:key="subscriptionLink"

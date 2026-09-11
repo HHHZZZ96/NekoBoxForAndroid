@@ -67,6 +67,7 @@ class GroupSettingsActivity(
         DataStore.subscriptionFilterMode = subscription.filterMode
         DataStore.subscriptionFilterRegex = subscription.filterRegex
         DataStore.subscriptionServerDns = subscription.serverDnsResolver ?: ""
+        DataStore.subscriptionShowInfoCard = subscription.showInfoCard
     }
 
     fun ProxyGroup.serialize() {
@@ -101,6 +102,7 @@ class GroupSettingsActivity(
                 filterMode = DataStore.subscriptionFilterMode
                 filterRegex = DataStore.subscriptionFilterRegex
                 serverDnsResolver = DataStore.subscriptionServerDns
+                showInfoCard = DataStore.subscriptionShowInfoCard
             }
         }
     }

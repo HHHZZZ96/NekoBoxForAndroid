@@ -103,7 +103,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
 
     var isExpert by configurationStore.boolean(Key.APP_EXPERT)
     var appTheme by configurationStore.int(Key.APP_THEME)
-    var nightTheme by configurationStore.stringToInt(Key.NIGHT_THEME)
+    var nightTheme by configurationStore.stringToInt(Key.NIGHT_THEME) { 2 }
     var appLanguage by configurationStore.string(Key.APP_LANGUAGE) { "" }
     var serviceMode by configurationStore.string(Key.SERVICE_MODE) { Key.MODE_VPN }
 
@@ -305,6 +305,7 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var subscriptionFilterMode by profileCacheStore.stringToInt(Key.SUBSCRIPTION_FILTER_MODE) { 0 }
     var subscriptionFilterRegex by profileCacheStore.string(Key.SUBSCRIPTION_FILTER_REGEX)
     var subscriptionServerDns by profileCacheStore.string(Key.SUBSCRIPTION_SERVER_DNS)
+    var subscriptionShowInfoCard by profileCacheStore.boolean(Key.SUBSCRIPTION_SHOW_INFO_CARD) { true }
 
     var rulesFirstCreate by profileCacheStore.boolean("rulesFirstCreate")
 
