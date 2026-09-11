@@ -1437,6 +1437,7 @@ class ConfigurationFragment @JvmOverloads constructor(
                     recyclerView: RecyclerView,
                     viewHolder: RecyclerView.ViewHolder
                 ): Int {
+                    if (viewHolder !is ConfigurationHolder) return makeMovementFlags(0, 0)
                     val dragFlags = if (DataStore.groupLayoutMode == 1) {
                         ItemTouchHelper.UP or ItemTouchHelper.DOWN or ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
                     } else {
@@ -1524,7 +1525,7 @@ class ConfigurationFragment @JvmOverloads constructor(
             super.onResume()
 
             if (::configurationListView.isInitialized && configurationListView.size == 0) {
-                configurationListView.adapter = adapter
+                configurationListView.adapter = concatAdapter
                 runOnDefaultDispatcher {
                     adapter?.reloadProfiles()
                 }
@@ -1661,17 +1662,16 @@ class ConfigurationFragment @JvmOverloads constructor(
             ProfileManager.addListener(adapter!!)
             GroupManager.addListener(adapter!!)
             infoAdapter = SubscriptionInfoAdapter()
-            concatAdapter = ConcatAdapter(
-                ConcatAdapter.Config.Builder().setIsolateViewTypes(false).build(),
-                infoAdapter!!,
-                adapter!!,
-            )
+            concatAdapter = ConcatAdapter(infoAdapter!!, adapter!!)
             configurationListView.adapter = concatAdapter
+            swipeRefresh.setDistanceToTriggerSync(dp2px(160))
+            swipeRefresh.setSlingshotDistance(dp2px(120))
             swipeRefresh.setOnChildScrollUpCallback { _, _ -> configurationListView.canScrollVertically(-1) }
             swipeRefresh.setOnRefreshListener {
                 swipeRefresh.isRefreshing = false
                 (parentFragment as? ConfigurationFragment)?.urlTest(proxyGroup)
             }
+            runOnDefaultDispatcher { adapter?.reloadProfiles() }
             configurationListView.setItemViewCacheSize(20)
             configurationListView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
@@ -1784,7 +1784,16 @@ class ConfigurationFragment @JvmOverloads constructor(
                 val updating = proxyGroup.id in GroupUpdater.updating
                 refresh.isEnabled = !updating
                 refresh.alpha = if (updating) 0.38f else 1f
-                refresh.setOnClickListener { GroupUpdater.startUpdate(proxyGroup, true) }
+                refresh.setOnClickListener {
+                    if (proxyGroup.id in GroupUpdater.updating) return@setOnClickListener
+                    val groupId = proxyGroup.id
+                    runOnDefaultDispatcher {
+                        val latest = SagerDatabase.groupDao.getById(groupId) ?: return@runOnDefaultDispatcher
+                        if (latest.type == GroupType.SUBSCRIPTION && latest.subscription != null) {
+                            GroupUpdater.executeUpdate(latest, true)
+                        }
+                    }
+                }
             }
         }
 
@@ -2316,9 +2325,48 @@ class ConfigurationFragment @JvmOverloads constructor(
                         selectProfile(proxyEntity)
                     }
                 }
-                view.setOnLongClickListener {
-                    if (!select) showDoubleColumnMenu(it, entity)
-                    !select
+                val touchSlop = ViewConfiguration.get(view.context).scaledTouchSlop
+                var downX = 0f
+                var downY = 0f
+                var downAt = 0L
+                var dragging = false
+                view.setOnTouchListener { _, event ->
+                    when (event.actionMasked) {
+                        MotionEvent.ACTION_DOWN -> {
+                            downX = event.rawX
+                            downY = event.rawY
+                            downAt = SystemClock.uptimeMillis()
+                            dragging = false
+                            true
+                        }
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = event.rawX - downX
+                            val dy = event.rawY - downY
+                            val held = SystemClock.uptimeMillis() - downAt
+                            if (!select && !dragging &&
+                                held >= ViewConfiguration.getLongPressTimeout() &&
+                                dx * dx + dy * dy >= touchSlop * touchSlop
+                            ) {
+                                dragging = true
+                                view.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+                                itemTouchHelper.startDrag(this)
+                            }
+                            true
+                        }
+                        MotionEvent.ACTION_UP -> {
+                            if (!dragging) {
+                                val held = SystemClock.uptimeMillis() - downAt
+                                if (!select && held >= ViewConfiguration.getLongPressTimeout()) {
+                                    showDoubleColumnMenu(view, entity)
+                                } else {
+                                    view.performClick()
+                                }
+                            }
+                            true
+                        }
+                        MotionEvent.ACTION_CANCEL -> true
+                        else -> false
+                    }
                 }
                 profileStatus.setOnClickListener {
                     val proxyEntity = entity
@@ -2430,40 +2478,24 @@ class ConfigurationFragment @JvmOverloads constructor(
             private fun applySelected(selected: Boolean) {
                 val ctx = card.context
                 val surface = ctx.getColorAttr(R.attr.colorSurface)
-                if (DataStore.profileCardStyle == 1) {
-                    val primary = ctx.getColorAttr(R.attr.colorPrimary)
-                    selectedIndicator.isVisible = false
+                selectedIndicator.isVisible = false
+                if (selected) {
                     card.cardElevation = 0f
                     card.strokeWidth = ctx.resources.getDimensionPixelSize(
-                        if (selected) R.dimen.card_stroke_width_selected
-                        else R.dimen.card_stroke_width
+                        R.dimen.card_stroke_width_selected
                     )
-                    card.strokeColor =
-                        if (selected) primary else ctx.getColour(R.color.card_stroke)
-                    card.setCardBackgroundColor(
-                        if (selected) {
-                            ColorUtils.compositeColors(
-                                ColorUtils.setAlphaComponent(primary, 26), surface
-                            )
-                        } else {
-                            surface
-                        }
-                    )
+                    card.strokeColor = ctx.getColour(R.color.black)
+                    card.setCardBackgroundColor(surface)
+                } else if (DataStore.profileCardStyle == 1) {
+                    card.cardElevation = 0f
+                    card.strokeWidth = ctx.resources.getDimensionPixelSize(R.dimen.card_stroke_width)
+                    card.strokeColor = ctx.getColour(R.color.card_stroke)
+                    card.setCardBackgroundColor(surface)
                 } else {
-                    val primary = ctx.getColorAttr(R.attr.selectedColorPrimary)
-                    selectedIndicator.isVisible = selected
                     card.strokeWidth = 0
                     card.cardElevation =
                         ctx.resources.getDimension(R.dimen.profile_card_elevation_classic)
-                    card.setCardBackgroundColor(
-                        if (selected) {
-                            ColorUtils.compositeColors(
-                                ColorUtils.setAlphaComponent(primary, 20), surface
-                            )
-                        } else {
-                            surface
-                        }
-                    )
+                    card.setCardBackgroundColor(surface)
                 }
             }
 

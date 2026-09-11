@@ -179,6 +179,11 @@
         <item name="cornerSize">@dimen/dialog_corner_radius</item>
     </style>
 
+    <style name="ShapeAppearanceOverlay.SagerNet.FloatingBar" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">32dp</item>
+    </style>
+
     <style name="ShapeAppearanceOverlay.SagerNet.Input" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">@dimen/input_corner_radius</item>
@@ -631,6 +636,10 @@
     </style>
 
     <style name="Theme.SagerNet.White" parent="Theme.SagerNet">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:statusBarColor">@color/pure_white</item>
+        <item name="android:navigationBarColor">@color/pure_white</item>
         <item name="colorPrimary">@color/pure_white</item>
         <item name="colorPrimaryDark">@color/pure_white</item>
         <item name="colorAccent">@color/pure_white_accent</item>
@@ -657,6 +666,8 @@
     </style>
 
     <style name="Theme.SagerNet.Dialog.White" parent="Theme.SagerNet.Dialog">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
         <item name="colorPrimary">@color/pure_white</item>
         <item name="colorPrimaryDark">@color/pure_white</item>
         <item name="colorAccent">@color/pure_white_accent</item>

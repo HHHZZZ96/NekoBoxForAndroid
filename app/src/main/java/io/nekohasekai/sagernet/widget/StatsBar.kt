@@ -133,7 +133,7 @@ class StatsBar @JvmOverloads constructor(
     }
 
     private fun shouldShow(): Boolean {
-        return allowShow && currentState == BaseService.State.Connected
+        return allowShow
     }
 
     private fun resetScrollDriverState() {
@@ -179,16 +179,15 @@ class StatsBar @JvmOverloads constructor(
         currentState = state
         allowShow = showControls
         when {
-            !showControls || state != BaseService.State.Connected -> {
+            !showControls -> {
                 applyTransition(
-                    if (animate && showControls) Transition.HideAfterStart else Transition.HideImmediate
+                    if (animate) Transition.HideAfterStart else Transition.HideImmediate
                 )
             }
 
-            showWhenConnected -> applyTransition(
+            else -> applyTransition(
                 if (animate) Transition.ShowAnimated else Transition.ShowImmediate
             )
-            alpha == 0f && isLaidOut -> alpha = 1f
         }
     }
 

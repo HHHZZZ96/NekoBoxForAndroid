@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">NekoBoxF</string>
-    <string name="app_name_long" translatable="false">NekoBoxF for Android</string>
+    <string name="app_name" translatable="false">NekoBox</string>
+    <string name="app_name_long" translatable="false">NekoBox for Android</string>
     <string name="app_desc">The universal proxy toolchain for Android, written in Kotlin.</string>
     <string name="project">Project</string>
     <string name="github">Source code</string>
@@ -14,6 +14,7 @@
     <string name="menu_group">Group</string>
     <string name="menu_about">About</string>
     <string name="theme">Theme</string>
+    <string name="theme_minimal_white">Minimal white</string>
     <string name="document">Document</string>
     <string name="group_default">Ungrouped</string>
     <string name="quick_toggle">Toggle</string>

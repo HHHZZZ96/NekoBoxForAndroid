@@ -385,7 +385,7 @@ class MainActivity : ThemedActivity(),
         animate: Boolean,
     ) {
         val showControls = fragment is ConfigurationFragment || DataStore.showBottomBar
-        binding.stats.useExternalScrollDriver = fragment is ConfigurationFragment
+        binding.stats.useExternalScrollDriver = false
         binding.stats.syncMainControls(
             showControls,
             DataStore.serviceState,

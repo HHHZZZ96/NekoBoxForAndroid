@@ -3,6 +3,7 @@ package moe.matsuri.nb4a.ui
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
 import android.util.AttributeSet
 import android.view.Gravity
 import android.view.View
@@ -19,6 +20,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.utils.Theme
 import io.nekohasekai.sagernet.ktx.getColorAttr
 import kotlin.math.roundToInt
 
@@ -93,6 +95,17 @@ class ColorPickerPreference
 
                 val themeId = i
                 val view = getNekoImageViewAtColor(color, 64, 0).apply {
+                    if (themeId == Theme.WHITE) {
+                        background = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(color)
+                            setStroke((2 * resources.displayMetrics.density).roundToInt(), 0xFF202124.toInt())
+                        }
+                        setPadding((12 * resources.displayMetrics.density).roundToInt())
+                    }
+                    contentDescription = if (themeId == Theme.WHITE) {
+                        context.getString(R.string.theme_minimal_white)
+                    } else null
                     setOnClickListener {
                         persistInt(themeId)
                         dialog.dismiss()
