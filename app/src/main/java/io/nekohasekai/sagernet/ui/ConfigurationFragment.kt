@@ -1501,7 +1501,7 @@ class ConfigurationFragment @JvmOverloads constructor(
         private var concatAdapter: ConcatAdapter? = null
 
         private fun headerCount() = infoAdapter?.itemCount ?: 0
-        private fun listPosition(profilePosition: Int) = headerCount() + profilePosition
+        fun listPosition(profilePosition: Int) = headerCount() + profilePosition
 
         val select by lazy {
             try {

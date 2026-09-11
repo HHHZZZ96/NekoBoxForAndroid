@@ -30,6 +30,7 @@ object Theme {
     const val GREY = 19
     const val BLUE_GREY = 20
     const val BLACK = 21
+    const val VERDANT_MINT = 22
     const val WHITE = 23
 
     private fun defaultTheme() = WHITE
