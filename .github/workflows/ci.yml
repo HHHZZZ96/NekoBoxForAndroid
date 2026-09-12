@@ -83,12 +83,13 @@ jobs:
       - name: Gradle Build
         env:
           BUILD_PLUGIN: none
+          nkmr_minify: "0"
         run: |
           echo "sdk.dir=${ANDROID_HOME}" > local.properties
           echo "ndk.dir=${ANDROID_HOME}/ndk/25.0.8775105" >> local.properties
           export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
           ./run init action gradle
-          KEYSTORE_PASS="${{ secrets.KEYSTORE_PASS }}" ALIAS_NAME="${{ secrets.ALIAS_NAME }}" ALIAS_PASS="${{ secrets.ALIAS_PASS }}" ./gradlew app:assembleOssDebug
+          KEYSTORE_PASS="${{ secrets.KEYSTORE_PASS }}" ALIAS_NAME="${{ secrets.ALIAS_NAME }}" ALIAS_PASS="${{ secrets.ALIAS_PASS }}" ./gradlew app:assembleOssRelease
           APK=$(find app/build/outputs/apk -name '*arm64-v8a*.apk' -type f | head -n 1)
           test -n "$APK"
           echo "APK=$APK" >> "$GITHUB_ENV"

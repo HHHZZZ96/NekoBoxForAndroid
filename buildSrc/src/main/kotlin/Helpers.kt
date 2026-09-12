@@ -88,6 +88,8 @@ fun Project.setupCommon() {
             buildTypes {
                 getByName("release") {
                     isShrinkResources = true
+                    debuggable(true)
+                    jniDebuggable(true)
                     if (System.getenv("nkmr_minify") == "0") {
                         isShrinkResources = false
                         isMinifyEnabled = false

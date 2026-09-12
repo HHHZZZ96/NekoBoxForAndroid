@@ -12,6 +12,7 @@ import io.nekohasekai.sagernet.ktx.Logs
 import io.nekohasekai.sagernet.ktx.app
 import io.nekohasekai.sagernet.ui.BlankActivity
 import java.io.BufferedReader
+import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.text.SimpleDateFormat
@@ -33,6 +34,21 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
             Logs.e(thread.toString())
             Logs.e(throwable.stackTraceToString())
         } catch (e: Exception) {
+        }
+
+        try {
+            val crashFile = File(
+                app.getExternalFilesDir(null) ?: app.filesDir,
+                "last_crash.txt"
+            )
+            crashFile.parentFile?.mkdirs()
+            crashFile.writeText(
+                buildReportHeader() +
+                    "Crash thread: ${thread.name}\n\n" +
+                    formatThrowable(throwable) + "\n"
+            )
+        } catch (e: Exception) {
+            Log.e("CrashHandler", "Unable to persist crash report", e)
         }
 
         ProcessPhoenix.triggerRebirth(app, Intent(app, BlankActivity::class.java).apply {
