@@ -32,6 +32,10 @@
             app:backgroundTint="?attr/colorSurface"
             app:contentInsetStart="0dp"
             app:contentInsetEnd="0dp"
+            app:fabAlignmentMode="end"
+            app:fabCradleMargin="8dp"
+            app:fabCradleRoundedCornerRadius="32dp"
+            app:fabCradleVerticalOffset="0dp"
             app:hideOnScroll="false"
             app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.SagerNet.FloatingBar">
 
@@ -96,6 +100,8 @@
             android:elevation="6dp"
             android:nextFocusDown="@+id/stats"
             app:backgroundTint="?attr/colorSurface"
+            app:layout_anchor="@id/stats"
+            app:layout_anchorGravity="center|end"
             app:fabCustomSize="64dp"
             app:pressedTranslationZ="6dp"
             app:srcCompat="@drawable/ic_service_idle"
